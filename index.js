@@ -2,32 +2,144 @@ Survey
     .StylesManager
     .applyTheme("default");
 
+var intro = {
+   "name": "introPage",
+   "firstPageIsStarted": true,
+   "elements": [
+    {
+     "type": "html",
+     "name": "descr",
+     "html": "<strong> Eksperimenta gaita:</strong><br/> \n\nUz īsu mirkli tiks parādīta kāda krāsa; pēc tam būs jāizvēlas tai līdzīgākā krāsa no 6 variantiem. Šādi tiks atkārtots 20 krāsām.\n<br/> Vēlams eksperimenta laikā nemainīt ekrāna spilgtuma līmeni. <br/>Aptuvenais eksperimenta ilgums: ~5min.\n"
+    }
+   ],
+   "description": "Šī aptauja ir paredzēta LU DF kursa \"Vizuālā uztvere: metodoloģijas un pieejas\" pētījumam par krāsu īstermiņa atmiņu. Pētījuma mērķis ir noskaidrot, vai īstermiņa atmiņā palikušās krāsas īpašības ir atkarīgas no parādītās krāsas."
+}
+
+var lastPage = {
+   "name": "lastPage",
+   "elements": [
+    {
+     "type": "dropdown",
+     "name": "age",
+     "title": "Lūdzu, norādiet savu vecuma grupu:",
+     "choices": [
+      {
+       "value": "0-11",
+       "text": "0-11"
+      },
+      {
+       "value": "12-17",
+       "text": "12-17"
+      },
+      {
+       "value": "18-24",
+       "text": "18-24"
+      },
+      {
+       "value": "25-34",
+       "text": "25-34"
+      },
+      {
+       "value": "35-44",
+       "text": "35-44"
+      },
+      {
+       "value": "45-54",
+       "text": "45-54"
+      },
+      {
+       "value": "55-64",
+       "text": "55-64"
+      },
+      {
+       "value": "64-75",
+       "text": "64-75"
+      },
+      {
+       "value": "75+",
+       "text": "75+"
+      }
+     ]
+    },
+    {
+     "type": "dropdown",
+     "name": "gender",
+     "title": "Lūdzu, norādiet savu dzimumu:",
+     "choices": [
+      {
+       "value": "male",
+       "text": "Vīrietis"
+      },
+      {
+       "value": "female",
+       "text": "Sieviete"
+      }
+     ]
+    },
+    {
+     "type": "text",
+     "name": "job",
+     "title": "Lūdzu, norādiet savu nodarbošanās jomu:"
+    }
+   ],
+   "title": "Demogrāfiskie jautājumi"
+}
+
+function shuffle(array) {
+  let currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+
+
+var pages = new Array(intro)
+pages.push(...shuffle(generatePages()))
+pages.push(lastPage)
+
 var json = {
  "title": "Krāsu īstermiņa atmiņa",
  "description": "Pētījums LU DF kursā \"Vizuālā uztvere: metodoloģijas un pieejas\"",
  "logoPosition": "right",
  "showQuestionNumbers": "off",
+ "pageNextText": "Turpināt",
+ "completeText": "Pabeigt",
  "showPrevButton": false,
  "goNextPageAutomatic": true,
- "pages": generatePages()
+ "showProgressBar": "top",
+ "pages": pages,
+ "completedHtml": `<h3>Paldies!</h3><br/><p>Rezultāti ir saglabāti</p>`
 };
 
 window.survey = new Survey.Model(json);
 
-Survey.Helpers.randomizeArray(survey.pages);
-survey.currentPage = survey.pages[0];
+//Survey.Helpers.randomizeArray(survey.pages);
+//survey.currentPage = survey.pages[0];
 
 survey
     .onComplete
     .add(function (result) {
-        document
-            .querySelector('#surveyResult')
-            .innerHTML = "result: " + JSON.stringify(result.data);
+		console.log(result.data)
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", "https://2q9zy.mocklab.io/submit", true);
+		xhr.setRequestHeader('Content-Type', 'application/json');
+		xhr.send(JSON.stringify(result.data));
     });
 
 function showColors() {
 	var page = survey.pages[survey.currentPageNo]
-	page.elements[0].title="Lūdzu, izvēlieties līdzīgāko krāsu iepriekš redzētajai";
+	page.elements[0].title="Lūdzu, izvēlieties līdzīgāko krāsu iepriekš redzētajai!";
 	page.elements[0].readOnly=false
 	page.elements[0].choices = page.elements[1].choices
 }
@@ -55,11 +167,12 @@ function generatePage(hexList, index) {
 	var shuffledColors =(hexList.slice(1)).sort((a, b) => 0.5 - Math.random());
 	return {
 	"name": pageId,
+    "navigationButtonsVisibility": "hide",
 	"elements": [
 		{
 		 "type": "imagepicker",
 		 "name": "question1_" + pageId + "_" + hexList[0],
-		 "title": "Lūdzu, iegaumējiet redzamo krāsu",
+		 "title": "Lūdzu, iegaumējiet redzamo krāsu!",
 		 "readOnly": true,
 		 "imageFit": "fill",
 		 //"colCount": 2,
@@ -138,13 +251,27 @@ function generatePages() {
 	return pages
 }
 
-
 survey
     .onAfterRenderQuestion
     .add(function (survey, options) {
-		setTimeout(hideColor, 3000)
+		if (survey.currentPageNo > 0 && survey.currentPageNo < survey.pages.length - 1) {
+			var img = document.querySelector('img')
+			if (img.complete) {
+			  imgLoaded()
+			} else {
+			  img.addEventListener('load', imgLoaded)
+			}
+		} else if (survey.currentPageNo == survey.pages.length - 1) {
+			survey.goNextPageAutomatic = false
+		}			
     });
 
 $("#surveyElement").Survey({model: survey});
+
+
+
+function imgLoaded() {
+	setTimeout(hideColor, 3000)
+}
 
 
