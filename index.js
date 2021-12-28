@@ -119,7 +119,8 @@ var json = {
  "goNextPageAutomatic": true,
  "showProgressBar": "top",
  "pages": pages,
- "completedHtml": `<h3>Paldies!</h3><br/><p>Rezultāti ir saglabāti</p>`
+ "completedHtml": `<h3>Paldies!</h3><br/><p>Rezultāti ir saglabāti</p>`,
+ "cookieName": "vizuztvere"
 };
 
 window.survey = new Survey.Model(json);
@@ -132,7 +133,7 @@ survey
     .add(function (result) {
 		console.log(result.data)
 		var xhr = new XMLHttpRequest();
-		xhr.open("POST", "https://2q9zy.mocklab.io/submit", true);
+		xhr.open("POST", "https://b88e575eeb36ffa05682d637f2087b37.m.pipedream.net", true);
 		xhr.setRequestHeader('Content-Type', 'application/json');
 		xhr.send(JSON.stringify(result.data));
     });
